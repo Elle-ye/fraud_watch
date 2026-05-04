@@ -1,0 +1,53 @@
+.app-sidebar {
+  width: 260px;
+  background-color: var(--brand-blue);
+  transition: width 0.3s ease, transform 0.3s ease;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 1000;
+  overflow-y: auto; /* Only scroll sidebar when its contents overflow */
+}
+
+.app-sidebar.is-collapsed {
+  width: 80px;
+}
+
+.app-sidebar.is-mobile {
+  position: fixed;
+  top: 56px;
+  height: calc(100vh - 56px);
+  z-index: 1000;
+  overflow-y: auto; /* Scroll inside the sidebar when contents overflow */
+}
+
+.app-sidebar.is-mobile.is-collapsed {
+  transform: translateX(-100%);
+}
+
+.app-sidebar-header,
+.app-sidebar-footer {
+  border-color: var(--sidebar-white-10) !important;
+}
+
+.app-sidebar-toggle {
+  background-color: var(--sidebar-white-10);
+}
+
+.app-sidebar-link {
+  border-radius: 8px;
+}
+
+.app-sidebar-link.active {
+  background-color: var(--sidebar-white-15);
+  color: var(--white) !important;
+}
+
+.app-logout-btn {
+  background-color: var(--danger-15);
+}
+
+.app-sidebar-overlay {
+  background-color: var(--overlay-black-50);
+  z-index: 998;
+}

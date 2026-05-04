@@ -1,0 +1,30 @@
+.reports-page {
+  background-color: var(--app-bg);
+  min-height: 100vh;
+}
+
+.reports-page-title {
+  color: var(--brand-blue);
+}
+
+.reports-reset-btn {
+  background-color: var(--brand-blue);
+  border-color: var(--brand-blue);
+}
+
+.reports-table-head {
+  background-color: var(--app-bg);
+}
+
+.reports-checkbox-col {
+  width: 40px;
+}
+
+.reports-table-header {
+  color: var(--brand-blue) !important;
+  border-bottom: 2px solid var(--brand-blue) !important;
+}
+
+.reports-row-selected {
+  background-color: var(--brand-blue-05);
+}

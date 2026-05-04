@@ -1,0 +1,64 @@
+.dashboard-title {
+  color: var(--brand-blue);
+}
+
+.stat-icon-box {
+  width: 56px;
+  height: 56px;
+}
+
+.stat-icon-primary {
+  background-color: var(--brand-blue-15);
+  color: var(--brand-blue);
+}
+
+.stat-icon-gray {
+  background-color: var(--gray-15);
+  color: var(--scrollbar-thumb);
+}
+
+.stat-icon-success {
+  background-color: var(--success-15);
+  color: var(--success);
+}
+
+.stat-icon-warning {
+  background-color: var(--warning-20);
+  color: var(--warning);
+}
+
+.stat-change-positive {
+  color: var(--success);
+}
+
+.stat-change-negative {
+  color: var(--danger);
+}
+
+.activity-icon-wrap {
+  width: 40px;
+  height: 40px;
+  background-color: var(--brand-blue-08);
+}
+
+.activity-icon {
+  color: var(--brand-blue);
+}
+
+.category-progress {
+  height: 8px;
+}
+
+.category-progress-bar {
+  border-radius: 4px;
+}
+
+.progress-primary { background-color: var(--brand-blue); }
+.progress-gray { background-color: var(--scrollbar-thumb); }
+.progress-success { background-color: var(--success); }
+.progress-warning { background-color: var(--warning); }
+
+.progress-w-45 { width: 45%; }
+.progress-w-30 { width: 30%; }
+.progress-w-15 { width: 15%; }
+.progress-w-10 { width: 10%; }

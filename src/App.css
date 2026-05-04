@@ -1,0 +1,82 @@
+/* src/App.css */
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--app-bg);
+}
+
+.top-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 1100;
+  background-color: var(--white);
+  border-bottom: 1px solid var(--divider);
+}
+
+.top-navbar-title {
+  color: var(--brand-blue);
+}
+
+.app-body {
+  min-height: 100vh;
+}
+
+.app-content {
+  min-height: 100vh;
+}
+
+.app-content-expanded {
+  margin-left: 0;
+}
+
+.app-content-collapsed {
+  margin-left: 0;
+}
+
+.app-content-mobile {
+  margin-left: 0;
+}
+
+.app-content-bg {
+  background-color: var(--app-bg);
+}
+
+.app-nav-toggle {
+  background-color: var(--brand-blue);
+  border-color: var(--brand-blue);
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 0;
+  transition: all 0.3s ease;
+  padding: 20px 30px;
+}
+
+@media (max-width: 768px) {
+  .app-body {
+    padding-top: 56px;
+  }
+
+  .app-content {
+    min-height: calc(100vh - 56px);
+  }
+
+  .app-content-expanded,
+  .app-content-collapsed,
+  .app-content-mobile {
+    margin-left: 0;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 20px 15px;
+  }
+}
