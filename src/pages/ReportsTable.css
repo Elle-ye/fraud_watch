@@ -4,7 +4,7 @@
 }
 
 .reports-page-title {
-  color: var(--brand-blue);
+  color: var(--brand-blue) !important;
 }
 
 .reports-reset-btn {

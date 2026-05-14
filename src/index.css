@@ -28,6 +28,10 @@
   --brand-blue-08: rgba(1, 34, 88, 0.08);
   --brand-blue-05: rgba(1, 34, 88, 0.05);
   --gray-15: rgba(107, 114, 128, 0.15);
+
+  /* Bootstrap primary color mapping */
+  --bs-primary: var(--brand-blue);
+  --bs-primary-rgb: 1, 34, 88;
 }
 
 * {
@@ -61,6 +65,19 @@ textarea,
 .form-select,
 .btn {
   font-size: 14px;
+}
+
+.btn {
+  --bs-btn-padding-x: 1.75rem !important;
+}
+/* Ensure all primary action buttons follow brand blue */
+.btn-primary {
+  --bs-btn-bg: var(--brand-blue) !important;
+  --bs-btn-border-color: var(--brand-blue) !important;
+  --bs-btn-hover-bg: rgb(22, 63, 133) !important;
+  --bs-btn-hover-border-color: rgb(22, 63, 133) !important;
+  --bs-btn-active-bg: rgb(15, 52, 113) !important;
+  --bs-btn-active-border-color: rgb(15, 52, 113) !important;
 }
 
 /* Custom scrollbar */

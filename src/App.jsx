@@ -1,91 +1,78 @@
-import { useEffect, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-import Sidebar from "./components/Sidebar";
+import ProtectedRoute from "./Auth/ProtectedRoute";
+import Login from "./Auth/Login";
+import Register from "./Auth/Register";
+
 import DashboardPage from "./pages/DashboardPage";
 import DailyReports from "./pages/DailyReports";
 import AllReports from "./pages/AllReports";
-import NewReport from "./pages/NewReport";
+import NewReport from "./report/NewReport";
+import PublicLayout from "./layout/PublicLayout";
+import BackendLayout from "./layout/BackendLayout";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
+import { Toaster } from "react-hot-toast";
+
 function App() {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
-    () => window.innerWidth < 768,
-  );
-
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      setIsSidebarCollapsed(mobile);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const toggleSidebar = () => setIsSidebarCollapsed((prev) => !prev);
-
   return (
-    // Whole App Container
-    <div className="app-shell">
-      {/* Top Navbar */}
-      {isMobile && (
-        <header className="top-navbar d-flex align-items-center px-3">
-          <button
-            type="button"
-            className="btn btn-sm text-white app-nav-toggle"
-            onClick={toggleSidebar}
-            aria-label={isSidebarCollapsed ? "Open sidebar" : "Close sidebar"}
-          >
-            <i
-              className={`fas ${isSidebarCollapsed ? "fa-bars" : "fa-times"}`}
-            ></i>
-          </button>
-          <div className="d-flex align-items-center ms-3">
-            <i className="fas fa-shield-alt fs-4"></i>
-            <span className="ms-1 fw-semibold top-navbar-title">
-              FraudWatch
-            </span>
-          </div>
-        </header>
-      )}
+    <>
+    {/* Toaster */}
+    <Toaster 
+        position="top-right"
+        toastOptions={{
+          // Default options for all toasts
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            fontSize: '16px',
+            borderRadius: '10px',
+          },
+          // Custom styles per type
+          success: {
+            icon: '✅',
+            style: {
+              background: '#28a745', // Bootstrap success green
+              color: 'white',
+            },
+          },
+          error: {
+            icon: '❌',
+            style: {
+              background: '#dc3545', // Bootstrap danger red
+              color: 'white',
+            },
+          },
+        }}
+      />
+    <Routes>
+      {/* Public Routes */}
+      <Route element={<PublicLayout />}>
+        <Route path="/new-report" element={<NewReport />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Route>
 
-      {/* Main Content Container */}
-      <div className="d-flex app-body">
-        {/* Sidebar */}
-        <Sidebar
-          isMobile={isMobile}
-          isCollapsed={isSidebarCollapsed}
-          onToggle={toggleSidebar}
-          onClose={() => setIsSidebarCollapsed(true)}
-        />
+      {/* Protected Routes */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <BackendLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/daily-reports" element={<DailyReports />} />
+        <Route path="/all-reports" element={<AllReports />} />
+      </Route>
 
-        {/* Main Content */}
-        <div className="main-content">
-          <div
-            className={`flex-grow-1 overflow-auto app-content app-content-bg ${
-              isMobile
-                ? "app-content-mobile"
-                : isSidebarCollapsed
-                  ? "app-content-collapsed"
-                  : "app-content-expanded"
-            }`}
-          >
-            {/* Routes */}
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/new-report" element={<NewReport />} />
-              <Route path="/daily-reports" element={<DailyReports />} />
-              <Route path="/all-reports" element={<AllReports />} />
-            </Routes>
-          </div>
-        </div>
-      </div>
-    </div>
+      {/* Catch all an redirect to New Report */}
+      <Route path="*" element={<Navigate to="/new-report" replace />} />
+    </Routes>
+    </>
   );
 }
 
