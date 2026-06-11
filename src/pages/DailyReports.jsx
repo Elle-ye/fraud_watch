@@ -1,6 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { Card, Button, InputGroup, Form, Badge, Row, Col } from "react-bootstrap";
+import {
+  Card,
+  Button,
+  InputGroup,
+  Form,
+  Badge,
+  Row,
+  Col,
+} from "react-bootstrap";
 import { supabase } from "../config/supabase";
+import ReportDetailsModal from "../components/ReportDetailsModal";
 import "./ReportsTable.css";
 import {
   useReactTable,
@@ -19,32 +28,54 @@ const DailyReports = () => {
   const [filterPriority, setFilterPriority] = useState("all");
   const [sorting, setSorting] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
+  const [detailReport, setDetailReport] = useState(null);
 
-  useEffect(() => {
-    console.log('DailyReports mounted');
-    return () => {
-      console.log('DailyReports unmounted');
-    };
-  }, []);
+  // useEffect(() => {
+  //   console.log('DailyReports mounted');
+  //   return () => {
+  //     console.log('DailyReports unmounted');
+  //   };
+  // }, []);
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchReports = async () => {
       setLoading(true);
-    
+
       try {
+        // Get the current date
+        const today = new Date();
+
+        // Start of today
+        const startOfToday = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate(),
+        ).toISOString();
+
+        // Start of tomorrow
+        const startOfTomorrow = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate() + 1,
+        ).toISOString();
+
         const { data: reports, error } = await supabase
           .from("reports")
           .select("*")
+          .gte("created_at", startOfToday)
+          .lt("created_at", startOfTomorrow)
           .order("created_at", { ascending: false });
-    
+        // console.log('Here')
+        // console.log(error);
+
         if (error) {
           console.error(error);
           if (isMounted) setData([]);
           return;
         }
-    
+
         if (isMounted) setData(reports || []);
       } catch (err) {
         console.error(err);
@@ -55,7 +86,7 @@ const DailyReports = () => {
     };
 
     fetchReports();
-    
+
     return () => {
       isMounted = false;
     };
@@ -63,25 +94,37 @@ const DailyReports = () => {
 
   const normalize = (value) => String(value ?? "").toLowerCase();
 
+  // for Search, Filter, and Sorting
   const filteredData = useMemo(() => {
     return data.filter((item) => {
-      const idText = normalize(item.id);
-      const typeText = normalize(item.crime_type);
-      const locationText = normalize(item.crime_location);
+      // Format the ID to FR-XXXXXX
+      const formattedId = `FR-${item.id
+        ?.split("-")[0]
+        ?.toUpperCase()
+        ?.slice(0, 6)}`;
+
+      const idText = normalize(formattedId);
+      const typeText = normalize(item.incident_type);
+      const locationText = normalize(item.incident_location);
       const statusText = normalize(item.report_status);
       const priorityText = normalize(item.report_priority);
       const searchText = searchTerm.toLowerCase();
 
+      // Search by ID, Type, Location, and Status
       const matchesSearch =
         searchTerm === "" ||
         idText.includes(searchText) ||
         typeText.includes(searchText) ||
         locationText.includes(searchText);
 
+      // Filter by Status
       const matchesStatus =
         filterStatus === "all" || statusText === filterStatus.toLowerCase();
+
+      // Filter by Priority
       const matchesPriority =
-        filterPriority === "all" || priorityText === filterPriority.toLowerCase();
+        filterPriority === "all" ||
+        priorityText === filterPriority.toLowerCase();
 
       return matchesSearch && matchesStatus && matchesPriority;
     });
@@ -96,7 +139,10 @@ const DailyReports = () => {
       critical: "danger",
     };
     return (
-      <Badge bg={variants[value] || "secondary"} className="px-3 py-2 text-capitalize">
+      <Badge
+        bg={variants[value] || "secondary"}
+        className="px-3 py-2 text-capitalize"
+      >
         {value || "unknown"}
       </Badge>
     );
@@ -115,102 +161,132 @@ const DailyReports = () => {
     };
     const label = value.replaceAll("_", " ") || "unknown";
     return (
-      <Badge bg={variants[value] || "secondary"} className="px-3 py-2 text-capitalize">
+      <Badge
+        bg={variants[value] || "secondary"}
+        className="px-3 py-2 text-capitalize"
+      >
         {label}
       </Badge>
     );
-  };
+  };  
 
   // Move columns definition inside useMemo to prevent recreation on every render
-  const columns = useMemo(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Form.Check
-          type="checkbox"
-          checked={table.getIsAllRowsSelected()}
-          onChange={table.getToggleAllRowsSelectedHandler()}
-        />
-      ),
-      cell: ({ row }) => (
-        <Form.Check
-          type="checkbox"
-          checked={row.getIsSelected()}
-          onChange={row.getToggleSelectedHandler()}
-        />
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: "id",
-      header: "Report ID",
-      cell: ({ row }) => <span className="fw-bold text-primary">{row.original.id}</span>,
-    },
-    {
-      id: "dateTime",
-      header: "Date & Time",
-      accessorFn: (row) => `${row.crime_date || ""} ${row.created_at || ""}`,
-      cell: ({ row }) => (
-        <>
-          {row.original.crime_date || "N/A"}{" "}
-          {row.original.created_at ? new Date(row.original.created_at).toLocaleTimeString() : ""}
-        </>
-      ),
-    },
-    {
-      accessorKey: "crime_type",
-      header: "Crime Type",
-      cell: ({ row }) => row.original.crime_type || "N/A",
-    },
-    {
-      accessorKey: "crime_location",
-      header: "Location",
-      cell: ({ row }) => row.original.crime_location || "N/A",
-    },
-    {
-      accessorKey: "report_status",
-      header: "Status",
-      cell: ({ row }) => getStatusBadge(row.original.report_status),
-    },
-    {
-      accessorKey: "report_priority",
-      header: "Priority",
-      cell: ({ row }) => getPriorityBadge(row.original.report_priority),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="d-flex gap-2">
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={() => alert(`Viewing ${row.original.id}`)}
-            title="View Details"
-          >
-            <i className="fas fa-eye"></i>
-          </Button>
-          <Button
-            variant="outline-info"
-            size="sm"
-            onClick={() => alert(`Editing ${row.original.id}`)}
-            title="Edit Report"
-          >
-            <i className="fas fa-edit"></i>
-          </Button>
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={() => alert(`Delete ${row.original.id}?`)}
-            title="Delete Report"
-          >
-            <i className="fas fa-trash"></i>
-          </Button>
-        </div>
-      ),
-    },
-  ], []); // Empty dependency array since these don't change
+  const columns = useMemo(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Form.Check
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            onChange={table.getToggleAllRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row }) => (
+          <Form.Check
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "id",
+        header: "Report ID",
+        cell: ({ row }) => {
+          const shortId = row.original.id
+            ?.split("-")[0]
+            ?.toUpperCase()
+            ?.slice(0, 6);
+          return <span className="fw-bold text-primary">FR-{shortId}</span>;
+        },
+      },
+      {
+        accessorKey: "created_at",
+        header: "Report Date",
+        cell: ({ row }) => (
+          <>
+            {/* {row.original.created_at || "N/A"}{" "} */}
+            {row.original.created_at
+              ? new Date(row.original.created_at).toLocaleDateString()
+              : ""}
+          </>
+        ),
+      },
+      {
+        accessorKey: "incident_type",
+        header: "Incident Type",
+        cell: ({ row }) => row.original.incident_type || "N/A",
+      },
+      {
+        accessorKey: "incident_location",
+        header: "Incident Location",
+        cell: ({ row }) => row.original.incident_location || "N/A",
+      },
+      {
+        accessorKey: "incident_description",
+        header: "Incident Description",
+        cell: ({ row }) => row.original.incident_description || "N/A",
+      },
+      {
+        accessorKey: "incident_date",
+        header: "Incident Date",
+        cell: ({ row }) => (
+          <>
+            {/* {row.original.incident_date || "N/A"}{" "} */}
+            {row.original.incident_date
+              ? new Date(row.original.incident_date).toLocaleDateString()
+              : ""}
+          </>
+        ),
+      },
+      {
+        accessorKey: "report_status",
+        header: "Report Status",
+        cell: ({ row }) => getStatusBadge(row.original.report_status),
+      },
+      {
+        accessorKey: "report_priority",
+        header: "Report Priority",
+        cell: ({ row }) => getPriorityBadge(row.original.report_priority),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="d-flex gap-2">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => setDetailReport(row.original)}
+              title="View Details"
+            >
+              <i className="fas fa-eye"></i>
+            </Button>
+            {/* <Button
+              variant="outline-info"
+              size="sm"
+              onClick={() => alert(`Editing ${row.original.id}`)}
+              title="Edit Report"
+            >
+              <i className="fas fa-edit"></i>
+            </Button> */}
+            {/* <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => alert(`Delete ${row.original.id}?`)}
+              title="Delete Report"
+            >
+              <i className="fas fa-trash"></i>
+            </Button> */}
+          </div>
+        ),
+      },
+    ],
+    [],
+  ); // Empty dependency array since these don't change
 
   const table = useReactTable({
     data: filteredData,
@@ -227,14 +303,19 @@ const DailyReports = () => {
     enableRowSelection: true,
   });
 
-  const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original.id);
+  const selectedRows = table
+    .getSelectedRowModel()
+    .rows.map((row) => row.original.id);
 
+    // Bulk selection
   const handleBulkAction = (action) => {
     if (selectedRows.length === 0) {
       alert("Please select at least one report");
       return;
     }
-    alert(`${action} ${selectedRows.length} report(s): ${selectedRows.join(", ")}`);
+    alert(
+      `${action} ${selectedRows.length} report(s): ${selectedRows.join(", ")}`,
+    );
   };
 
   if (loading) {
@@ -254,7 +335,9 @@ const DailyReports = () => {
           <i className="fas fa-calendar-day me-3"></i>
           Daily Reports
         </h1>
-        <p className="text-secondary">Reports filed today - {new Date().toLocaleDateString()}</p>
+        <p className="text-secondary">
+          Reports filed today - {new Date().toLocaleDateString()}
+        </p>
       </div>
 
       <Card className="border-0 shadow-sm mb-4">
@@ -275,7 +358,10 @@ const DailyReports = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 {searchTerm && (
-                  <Button variant="outline-secondary" onClick={() => setSearchTerm("")}>
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => setSearchTerm("")}
+                  >
                     <i className="fas fa-times"></i>
                   </Button>
                 )}
@@ -286,7 +372,10 @@ const DailyReports = () => {
               <Form.Label className="text-secondary mb-1">
                 <i className="fas fa-filter me-2"></i>Status
               </Form.Label>
-              <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <Form.Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
                 <option value="all">All Status</option>
                 <option value="new">New</option>
                 <option value="pending">Pending</option>
@@ -338,13 +427,25 @@ const DailyReports = () => {
               <strong>{selectedRows.length}</strong> report(s) selected
             </span>
             <div className="d-flex gap-2">
-              <Button size="sm" variant="success" onClick={() => handleBulkAction("Resolve")}>
-                <i className="fas fa-check me-2"></i>Resolve Selected
+              <Button
+                size="sm"
+                variant="success"
+                onClick={() => handleBulkAction("Resolve")}
+              >
+                <i className="fas fa-check me-2"></i>Resolve/Assign Selected
               </Button>
-              <Button size="sm" variant="danger" onClick={() => handleBulkAction("Delete")}>
+              {/* <Button
+                size="sm"
+                variant="danger"
+                onClick={() => handleBulkAction("Delete")}
+              >
                 <i className="fas fa-trash me-2"></i>Delete Selected
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setRowSelection({})}>
+              </Button> */}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setRowSelection({})}
+              >
                 <i className="fas fa-times me-2"></i>Clear Selection
               </Button>
             </div>
@@ -373,12 +474,17 @@ const DailyReports = () => {
                             : undefined
                         }
                         style={{
-                          cursor: header.column.getCanSort() ? "pointer" : "default",
+                          cursor: header.column.getCanSort()
+                            ? "pointer"
+                            : "default",
                         }}
                       >
                         {header.isPlaceholder ? null : (
                           <>
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                             {header.column.getCanSort() &&
                               (header.column.getIsSorted() === "asc"
                                 ? " ▲"
@@ -396,11 +502,16 @@ const DailyReports = () => {
                 {table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className={row.getIsSelected() ? "reports-row-selected" : ""}
+                    className={
+                      row.getIsSelected() ? "reports-row-selected" : ""
+                    }
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -411,7 +522,9 @@ const DailyReports = () => {
             {filteredData.length === 0 && (
               <div className="text-center py-5">
                 <i className="fas fa-inbox fa-3x text-secondary mb-3"></i>
-                <p className="text-secondary">No reports found matching your criteria</p>
+                <p className="text-secondary">
+                  No reports found matching your criteria
+                </p>
               </div>
             )}
           </div>
@@ -433,7 +546,13 @@ const DailyReports = () => {
           </Button>
         </div>
       </div>
-    </div>
+
+      <ReportDetailsModal
+        show={detailReport != null}
+        onHide={() => setDetailReport(null)}
+        report={detailReport}
+      />
+     </div>
   );
 };
 

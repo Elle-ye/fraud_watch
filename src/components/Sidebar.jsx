@@ -1,13 +1,19 @@
 // src/components/Sidebar.jsx
 import { NavLink, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
+import { supabase } from '../config/supabase';
 
 const Sidebar = ({ isMobile, isCollapsed, onToggle, onClose }) => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    alert('Logged out successfully');
-    navigate('/dashboard');
+  // const handleLogout = () => {
+  //   alert('Logged out successfully');
+  //   navigate('/dashboard');
+  //   if (isMobile) onClose();
+  // };
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
     if (isMobile) onClose();
   };
 
