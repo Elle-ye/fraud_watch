@@ -1,0 +1,655 @@
+import { useState, useEffect, useMemo } from "react";
+import {
+  Card,
+  Button,
+  InputGroup,
+  Form,
+  Badge,
+  Row,
+  Col,
+} from "react-bootstrap";
+import { supabase } from "../config/supabase";
+import ReportDetailsModal from "../components/ReportDetailsModal";
+import "./ReportsTable.css";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  flexRender,
+  getPaginationRowModel,
+} from "@tanstack/react-table";
+
+const AllReports = () => {
+  // Initial States
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [sorting, setSorting] = useState([]);
+  const [rowSelection, setRowSelection] = useState({});
+  const [detailReport, setDetailReport] = useState(null);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  // Fetch data from supabase
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchReports = async () => {
+      setLoading(true);
+
+      try {
+        const { data: reports, error } = await supabase
+          .from("reports")
+          .select("*")
+          .order("created_at", { ascending: false });
+        // console.log('Here')
+        // console.log(error);
+
+        if (error) {
+          console.error(error);
+          if (isMounted) setData([]);
+          return;
+        }
+
+        // if (isMounted) setData(reports || []);
+
+        const reportsWithSignedUrls = await Promise.all(
+          (reports || []).map(async (report) => {
+            const attachments = await Promise.all(
+              (report.attachments || []).map(async (file) => {
+                const { data } = await supabase.storage
+                  .from("report-attachments")
+                  .createSignedUrl(file.path, 60 * 60);
+
+                return {
+                  ...file,
+                  signedUrl: data?.signedUrl || null,
+                };
+              }),
+            );
+
+            return {
+              ...report,
+              attachments,
+            };
+          }),
+        );
+
+        setData(reportsWithSignedUrls);
+      } catch (err) {
+        console.error(err);
+        if (isMounted) setData([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchReports();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const normalize = (value) => String(value ?? "").toLowerCase();
+
+  // for Search, Filter, and Sorting
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      // Format the ID to FR-XXXXXX
+      const formattedId = `FR-${item.id
+        ?.split("-")[0]
+        ?.toUpperCase()
+        ?.slice(0, 6)}`;
+
+      const idText = normalize(formattedId);
+      const typeText = normalize(item.incident_type);
+      const locationText = normalize(item.incident_location);
+      const statusText = normalize(item.report_status);
+      const priorityText = normalize(item.report_priority);
+      const searchText = searchTerm.toLowerCase();
+
+      // Search by ID, Type, Location, and Status
+      const matchesSearch =
+        searchTerm === "" ||
+        idText.includes(searchText) ||
+        typeText.includes(searchText) ||
+        locationText.includes(searchText);
+
+      // Filter by Status
+      const matchesStatus =
+        filterStatus === "all" || statusText === filterStatus.toLowerCase();
+
+      // Filter by Priority
+      const matchesPriority =
+        filterPriority === "all" ||
+        priorityText === filterPriority.toLowerCase();
+
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [data, searchTerm, filterStatus, filterPriority]);
+
+  // Reset to first page when filtering
+  useEffect(() => {
+    setPagination((prev) => ({
+      ...prev,
+      pageIndex: 0,
+    }));
+  }, [searchTerm, filterStatus, filterPriority]);
+
+  // Priority Badge
+  const getPriorityBadge = (priority) => {
+    const value = String(priority ?? "").toLowerCase();
+    const variants = {
+      low: "success",
+      medium: "info",
+      high: "warning",
+      critical: "danger",
+    };
+    return (
+      <Badge
+        bg={variants[value] || "secondary"}
+        className="px-3 py-2 text-capitalize"
+      >
+        {value || "unknown"}
+      </Badge>
+    );
+  };
+
+  // Status Badge
+  const getStatusBadge = (status) => {
+    const value = String(status ?? "").toLowerCase();
+    const variants = {
+      new: "primary",
+      pending: "secondary",
+      under_review: "info",
+      underreview: "info",
+      resolved: "success",
+      investigation: "warning",
+      rejected: "danger",
+    };
+    const label = value.replaceAll("_", " ") || "unknown";
+    return (
+      <Badge
+        bg={variants[value] || "secondary"}
+        className="px-3 py-2 text-capitalize"
+      >
+        {label}
+      </Badge>
+    );
+  };
+
+  // Move columns definition inside useMemo to prevent recreation on every render
+  const columns = useMemo(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Form.Check
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            onChange={table.getToggleAllRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row }) => (
+          <Form.Check
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "id",
+        header: "Report ID",
+        cell: ({ row }) => {
+          const shortId = row.original.id
+            ?.split("-")[0]
+            ?.toUpperCase()
+            ?.slice(0, 6);
+          return <span className="fw-bold text-primary">FR-{shortId}</span>;
+        },
+      },
+      {
+        accessorKey: "created_at",
+        header: "Report Date",
+        cell: ({ row }) => (
+          <>
+            {/* {row.original.created_at || "N/A"}{" "} */}
+            {row.original.created_at
+              ? new Date(row.original.created_at).toLocaleDateString()
+              : ""}
+          </>
+        ),
+      },
+      {
+        accessorKey: "incident_type",
+        header: "Incident Type",
+        cell: ({ row }) => row.original.incident_type || "N/A",
+      },
+      {
+        accessorKey: "incident_location",
+        header: "Incident Location",
+        cell: ({ row }) => row.original.incident_location || "N/A",
+      },
+      {
+        accessorKey: "incident_description",
+        header: "Incident Description",
+        cell: ({ row }) => row.original.incident_description || "N/A",
+      },
+      {
+        accessorKey: "incident_date",
+        header: "Incident Date",
+        cell: ({ row }) => (
+          <>
+            {/* {row.original.incident_date || "N/A"}{" "} */}
+            {row.original.incident_date
+              ? new Date(row.original.incident_date).toLocaleDateString()
+              : ""}
+          </>
+        ),
+      },
+      {
+        accessorKey: "report_status",
+        header: "Report Status",
+        cell: ({ row }) => getStatusBadge(row.original.report_status),
+      },
+      {
+        accessorKey: "report_priority",
+        header: "Report Priority",
+        cell: ({ row }) => getPriorityBadge(row.original.report_priority),
+      },
+      {
+        id: "assigned_to",
+        header: "Assigned To",
+        cell: ({ row }) => row.original.assigned_to || "N/A",
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="d-flex gap-2">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => setDetailReport(row.original)}
+              title="View Details"
+            >
+              <i className="fas fa-eye"></i>
+            </Button>
+            {/* <Button
+              variant="outline-info"
+              size="sm"
+              onClick={() => alert(`Editing ${row.original.id}`)}
+              title="Edit Report"
+            >
+              <i className="fas fa-edit"></i>
+            </Button> */}
+            {/* <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => alert(`Delete ${row.original.id}?`)}
+              title="Delete Report"
+            >
+              <i className="fas fa-trash"></i>
+            </Button> */}
+          </div>
+        ),
+      },
+    ],
+    [setDetailReport],
+  ); // Empty dependency array since these don't change
+
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    state: {
+      sorting,
+      rowSelection,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    enableRowSelection: true,
+  });
+
+  const selectedRows = table
+    .getSelectedRowModel()
+    .rows.map((row) => row.original.id);
+
+  const handleBulkAction = (action) => {
+    if (selectedRows.length === 0) {
+      alert("Please select at least one report");
+      return;
+    }
+    alert(
+      `${action} ${selectedRows.length} report(s): ${selectedRows.join(", ")}`,
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center mt-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+  // Page Change Handler
+  const pageSize = table.getState().pagination.pageSize;
+  const isAll = pageSize === filteredData.length;
+
+  const handlepagination = (e) => {
+    const value = e.target.value;
+
+    table.setPageSize(value === "all" ? filteredData.length : Number(value));
+
+    table.setPageIndex(0); 
+  };
+
+  // ALL Reports View
+  return (
+    <div className="p-0 reports-page">
+      <div className="mb-4">
+        <h1 className="h2 mb-2 reports-page-title">
+          <i className="fas fa-database me-3"></i>
+          All Reports
+        </h1>
+        <p className="text-secondary">
+          Complete history of all fraud and crime reports
+        </p>
+      </div>
+
+      {/* Filter container */}
+      <Card className="border-0 shadow-sm mb-4">
+        <Card.Body>
+          <Row className="g-3">
+            <Col md={4}>
+              <Form.Label className="text-secondary mb-1">
+                <i className="fas fa-search me-2"></i>Search
+              </Form.Label>
+              <InputGroup>
+                <InputGroup.Text>
+                  <i className="fas fa-search"></i>
+                </InputGroup.Text>
+                <Form.Control
+                  type="text"
+                  placeholder="Search by ID, type, or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => setSearchTerm("")}
+                  >
+                    <i className="fas fa-times"></i>
+                  </Button>
+                )}
+              </InputGroup>
+            </Col>
+
+            <Col md={3}>
+              <Form.Label className="text-secondary mb-1">
+                <i className="fas fa-filter me-2"></i>Status
+              </Form.Label>
+              <Form.Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="new">New</option>
+                <option value="pending">Pending</option>
+                <option value="under_review">Under Review</option>
+                <option value="investigation">Investigation</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+              </Form.Select>
+            </Col>
+
+            <Col md={3}>
+              <Form.Label className="text-secondary mb-1">
+                <i className="fas fa-flag me-2"></i>Priority
+              </Form.Label>
+              <Form.Select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+              >
+                <option value="all">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </Form.Select>
+            </Col>
+
+            <Col md={2}>
+              <Form.Label className="mb-1">&nbsp;</Form.Label>
+              <Button
+                className="w-100 reports-reset-btn"
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterStatus("all");
+                  setFilterPriority("all");
+                }}
+              >
+                <i className="fas fa-undo-alt me-2"></i>Reset
+              </Button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {/* Bulk Select - Resolve, Assign, Clear*/}
+      {selectedRows.length > 0 && (
+        <div className="mb-3 p-3 bg-primary bg-opacity-10 rounded border border-primary">
+          <div className="d-flex justify-content-between align-items-center">
+            <span>
+              <i className="fas fa-check-circle me-2 text-primary"></i>
+              <strong>{selectedRows.length}</strong> report(s) selected
+            </span>
+            <div className="d-flex gap-2">
+              {/* Resolve */}
+              <Button
+                size="sm"
+                variant="success"
+                onClick={() => handleBulkAction("Resolve")}
+              >
+                <i className="fas fa-check me-2"></i>Resolve Selected
+              </Button>
+
+              {/* Delete - to be changed to Assign */}
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => handleBulkAction("Delete")}
+              >
+                <i className="fas fa-trash me-2"></i>Delete Selected
+              </Button>
+
+              {/* Clear */}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setRowSelection({})}
+              >
+                <i className="fas fa-times me-2"></i>Clear Selection
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Data Table */}
+      <Card className="border-0 shadow-sm">
+        <Card.Header className="d-flex align-items-center justify-content-between flex-wrap gap-2 py-3">
+          <span className="text-secondary small mb-0">
+            <i className="fas fa-list-ul me-2"></i>
+            Rows per page
+          </span>
+          <select
+            className="pages"
+            aria-label="Rows per page"
+            value={isAll ? "all" : pageSize}
+            onChange={handlepagination}
+          >
+            {[5, 10, 20, 50].map((size) => (
+              <option key={size} value={size}>
+                Show {size}
+              </option>
+            ))}
+
+            <option value="all">Show All</option>
+          </select>
+        </Card.Header>
+        <Card.Body className="p-0">
+          <div className="table-responsive">
+            <table className="table table-hover mb-0">
+              <thead className="reports-table-head">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className={
+                          header.id === "select"
+                            ? "reports-checkbox-col"
+                            : "reports-table-header"
+                        }
+                        onClick={
+                          header.column.getCanSort()
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
+                        }
+                        style={{
+                          cursor: header.column.getCanSort()
+                            ? "pointer"
+                            : "default",
+                        }}
+                      >
+                        {header.isPlaceholder ? null : (
+                          <>
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                            {header.column.getCanSort() &&
+                              (header.column.getIsSorted() === "asc"
+                                ? " ▲"
+                                : header.column.getIsSorted() === "desc"
+                                  ? " ▼"
+                                  : "")}
+                          </>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={
+                      row.getIsSelected() ? "reports-row-selected" : ""
+                    }
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filteredData.length === 0 && (
+              <div className="text-center py-5">
+                <i className="fas fa-inbox fa-3x text-secondary mb-3"></i>
+                <p className="text-secondary">
+                  No reports found matching your criteria
+                </p>
+              </div>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
+
+      <div className="mt-3 d-flex justify-content-between align-items-center paginations">
+        <div className="text-secondary small">
+          <i className="fas fa-chart-bar me-2"></i>
+          Showing {table.getRowModel().rows.length} of {filteredData.length}{" "}
+          reports
+        </div>
+
+        <div className="d-flex flex-wrap align-items-center gap-2 ms-auto">
+          {table.getPageCount() > 1 && (
+            <span className="pagination-page-label">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </span>
+          )}
+
+          <div className="pagination-actions">
+            <button
+              type="button"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              First
+            </button>
+
+            <button
+              type="button"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Prev
+            </button>
+
+            <button
+              type="button"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </button>
+
+            <button
+              type="button"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
+              Last
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <ReportDetailsModal
+        show={detailReport != null}
+        onHide={() => setDetailReport(null)}
+        report={detailReport}
+      />
+    </div>
+  );
+};
+
+export default AllReports;

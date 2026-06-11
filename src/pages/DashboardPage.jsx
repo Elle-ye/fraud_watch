@@ -3,8 +3,14 @@
 // import React from 'react';
 import { Card, Row, Col, Badge } from 'react-bootstrap';
 import './DashboardPage.css';
+// import { supabase } from '../config/supabase';
+// import { useEffect, useState } from 'react';
+import { useAuth } from '../context/useAuth';
 
 const DashboardPage = () => {
+  const {profile, loading} = useAuth();
+  // const [userName, setUserName] = useState("");
+
   const stats = [
     { title: 'Total Reports', value: '1,284', icon: 'fa-flag', iconClass: 'stat-icon-primary', change: '+12%' },
     { title: 'Pending Review', value: '47', icon: 'fa-clock', iconClass: 'stat-icon-gray', change: '-3%' },
@@ -26,11 +32,52 @@ const DashboardPage = () => {
     { name: 'Other Crimes', percentage: 10, colorClass: 'progress-warning', widthClass: 'progress-w-10' },
   ];
 
+  // Fetch User Name
+  // const fetchUserName = async()=>{
+  //   if(!user) return;
+
+  //   const { error, data } = await supabase
+  //   .from("profiles")
+  //   .select("full_name")
+  //   .eq("id", user.id)
+  //   .single();
+
+  //   if(error){
+  //     console.log(error);
+  //     setUserName("Unknown User")
+  //   }else{
+  //     setUserName(data.full_name);
+  //   }
+  // }
+
+  if(loading || !profile) {
+    return null
+  }
+  // useEffect(()=>{
+  //   const fetchUserName = async()=>{
+  //     if(!user) return;
+  
+  //     const { error, data } = await supabase
+  //     .from("profiles")
+  //     .select("full_name")
+  //     .eq("id", user.id)
+  //     .single();
+  
+  //     if(error){
+  //       console.log(error);
+  //       setUserName("Guest User")
+  //     }else{
+  //       setUserName(data.full_name);
+  //     }
+  //   }
+  //   fetchUserName();
+  // },[user]);
+
   return (
     <div className="p-0">
       <div className="mb-4">
         <h1 className="h2 mb-2 dashboard-title">Dashboard</h1>
-        <p className="text-secondary">Welcome back, Admin. Here's what's happening with your reports today.</p>
+        <p className="text-secondary">Welcome back, <strong>{profile?.full_name || "Guest User"}</strong>. Here's what's happening with your reports today.</p>
       </div>
 
       <Row className="g-4 mb-4">

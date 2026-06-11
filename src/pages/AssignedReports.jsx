@@ -12,13 +12,16 @@ import ReportsFilters from "../components/reports/ReportsFilters";
 import ReportsBulkBar from "../components/reports/ReportsBulkBar";
 import ReportsTable from "../components/reports/ReportsTable";
 import ReportsPagination from "../components/reports/ReportsPagination";
-import { useDailyReports } from "../hooks/useDailyReports";
-import { useReportsColumns } from "../hooks/useReportsColumns";
+// import { useAllReports } from "../hooks/useAllReports";
+import { useAssignedReports } from "../hooks/useAssignedReports";
+// import { useReportsColumns } from "../hooks/useReportsColumns";
+import { useAssignedReportsColumns } from "../hooks/useAssignedReportsColumns";
 import { filterReports } from "../utils/reportFormatters";
 import "./ReportsTable.css";
 
-const DailyReports = () => {
-  const { data, loading } = useDailyReports();
+const AssignedReports = () => {
+  const { data, loading, profile } = useAssignedReports();
+//   console.log(profile?.full_name);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -38,7 +41,7 @@ const DailyReports = () => {
     [data, searchTerm, filterStatus, filterPriority],
   );
 
-  const columns = useReportsColumns(setDetailReport);
+  const columns = useAssignedReportsColumns(setDetailReport);
 
   const table = useReactTable({
     data: filteredData,
@@ -87,9 +90,9 @@ const DailyReports = () => {
   return (
     <div className="p-0 reports-page">
       <ReportsPageHeader
-        title="Daily Reports"
-        icon="fas fa-calendar-day"
-        subtitle={`Reports filed today - ${new Date().toLocaleDateString()}`}
+        title="Assigned Reports"
+        icon="fas fa-database"
+        subtitle={`All reports assigned to ${profile?.full_name || "Guest User"}`}
       />
 
       <ReportsFilters
@@ -125,4 +128,4 @@ const DailyReports = () => {
   );
 };
 
-export default DailyReports;
+export default AssignedReports;
