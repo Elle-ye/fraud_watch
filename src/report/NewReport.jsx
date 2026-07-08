@@ -333,19 +333,19 @@ const NewReport = () => {
         console.error(err);
 
         setFormError(err?.message || "Report submission failed.");
+        throw err;
       }
     };
 
-    toast
-      .promise(submitPromise(), {
+    try {
+      await toast.promise(submitPromise(), {
         loading: "Submitting report...",
         success: "Report submitted successfully",
         error: (err) => err?.message || "Report submission failed.",
-      })
-
-      .finally(() => {
-        setIsSubmitting(false);
       });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
