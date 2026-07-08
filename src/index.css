@@ -67,9 +67,9 @@ textarea,
   font-size: 14px;
 }
 
-.btn {
+/* .btn {
   --bs-btn-padding-x: 1.75rem !important;
-}
+} */
 /* Ensure all primary action buttons follow brand blue */
 .btn-primary {
   --bs-btn-bg: var(--brand-blue) !important;

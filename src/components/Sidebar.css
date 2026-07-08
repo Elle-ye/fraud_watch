@@ -44,10 +44,160 @@
 }
 
 .app-logout-btn {
-  background-color: var(--danger-15);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--sidebar-white-10) !important;
+  border-radius: 0.5rem !important;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.app-logout-btn:hover {
+  color: var(--white) !important;
+  background: var(--danger-15) !important;
+  border-color: rgba(220, 53, 69, 0.35) !important;
 }
 
 .app-sidebar-overlay {
   background-color: var(--overlay-black-50);
   z-index: 998;
+}
+
+/* User profile card — matches app toast / card theme */
+.user-profile-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem 0.65rem 0.85rem;
+  background: rgba(255, 255, 255, 0.91);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.65rem;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.06),
+    0 8px 20px rgba(1, 34, 88, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+.user-profile-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--brand-blue);
+  border-radius: 0.65rem 0 0 0.65rem;
+}
+
+.user-profile-card--collapsed::before{
+  background: none;
+}
+
+.user-profile-card--collapsed {
+  /* flex-direction: column; */
+  justify-content: center;
+  width: 2.75rem;
+  padding: 0.5rem;
+  gap: 0.35rem;
+  
+  background: none;
+  border: none;
+  border-radius:0;
+  box-shadow:none;
+  backdrop-filter:none;
+}
+
+.user-profile-card--collapsed .user-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.9rem;
+  
+  background: rgba(255, 255, 255, 0.91);
+  /* color: ; */
+}
+
+.user-profile-card--collapsed .status-dot {
+  position: static;
+  margin: 0;
+}
+
+.user-profile-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.user-avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--brand-blue);
+  background: var(--brand-blue-08);
+  border: 1.5px solid var(--brand-blue-15);
+  border-radius: 50%;
+}
+
+.user-name {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.role-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--brand-blue-08);
+  color: var(--brand-blue);
+  text-transform: capitalize;
+}
+
+.role-badge i {
+  font-size: 0.625rem;
+  opacity: 0.85;
+}
+
+.role-badge--admin {
+  background: var(--brand-blue-15);
+  color: var(--brand-blue);
+}
+
+.role-badge--supervisor {
+  background: var(--warning-20);
+  color: #856404;
+}
+
+.role-badge--team-member {
+  background: var(--brand-blue-08);
+  color: var(--brand-blue);
+}
+
+.status-dot {
+  flex-shrink: 0;
+  align-self: flex-start;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-top: 0.2rem;
+  background: var(--success);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--success-15);
 }

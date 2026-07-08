@@ -2,6 +2,7 @@ import { Form, Card, Row, Col, InputGroup, Button, Alert } from "react-bootstrap
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../config/supabase";
+import toast from "react-hot-toast";
 
 const Register = () => {
 
@@ -10,7 +11,7 @@ const Register = () => {
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [loading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     // Navigation
@@ -26,38 +27,48 @@ const Register = () => {
     },[]);
 
     // Registration Handler
-    const handleRegister = async(e) => {
+    const handleRegister = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
 
+        if (!fullName || !email || !password) {
+            toast.error("Please fill in all fields");
+            return;
+        }
+
+        setLoading(true);
         setError(null);
 
-        try{
-            const { error } = await supabase.auth.signUp({
+        try {
+            const registerPromise = supabase.auth.signUp({
                 email,
                 password,
-                options :{
-                    data:{
-                        full_name: fullName
-                    }
-                }
-            })
-    
-            if (error) {
-                throw error
-            } 
+                options: {
+                    data: {
+                        full_name: fullName,
+                    },
+                },
+            });
 
-            navigate("/dashboard")
-        } catch(err){
-            console.log("err")
+            const { error } = await toast.promise(registerPromise, {
+                loading: "Creating your account...",
+                success: ({ error }) => {
+                    if (error) throw error;
+                    return "Account created successfully!";
+                },
+                error: (err) =>
+                    err.message || "Registration failed. Please try again.",
+            });
 
-            setError(
-                err.message || "Registration Failed"
-            )
+            if (error) return;
+
+            navigate("/dashboard");
+        } catch (err) {
+            console.error(err);
+            setError(err.message || "Registration failed");
         } finally {
-            setIsLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
 
 
