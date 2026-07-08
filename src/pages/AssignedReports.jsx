@@ -6,7 +6,7 @@ import {
   getSortedRowModel,
   getPaginationRowModel,
 } from "@tanstack/react-table";
-import ReportDetailsModal from "../components/ReportDetailsModal";
+// import ReportDetailsModal from "../components/ReportDetailsModal";
 import ReportsPageHeader from "../components/reports/ReportsPageHeader";
 import ReportsFilters from "../components/reports/ReportsFilters";
 import ReportsBulkBar from "../components/reports/ReportsBulkBar";
@@ -18,6 +18,7 @@ import { useAssignedReports } from "../hooks/useAssignedReports";
 import { useAssignedReportsColumns } from "../hooks/useAssignedReportsColumns";
 import { filterReports } from "../utils/reportFormatters";
 import "./ReportsTable.css";
+import AssignedReportModal from "../components/AssignedReportModal";
 
 const AssignedReports = () => {
   const { data, loading, profile } = useAssignedReports();
@@ -119,7 +120,7 @@ const AssignedReports = () => {
         onExport={() => alert("Exporting to CSV...")}
       />
 
-      <ReportDetailsModal
+      <AssignedReportModal
         show={detailReport != null}
         onHide={() => setDetailReport(null)}
         report={detailReport}

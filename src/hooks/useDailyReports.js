@@ -20,6 +20,32 @@ export const useDailyReports = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const updateReportAfterAssignment = ({ reportId, assignments, status }) => {
+    
+    setData((prev) =>
+      prev.map((report) =>
+        report.id === reportId
+          ? {
+              ...report,
+              report_status: status,
+              report_assignments: [
+                ...(report.report_assignments || []),
+                ...assignments,
+              ],
+              assigned_to:
+                assignments
+                  .map((a) => a.assigned_to?.full_name)
+                  .filter(Boolean)
+                  .join(", ") || report.assigned_to,
+              assigned_by:
+                assignments[0]?.assigned_by?.full_name || report.assigned_by,
+            }
+          : report,
+      ),
+    );
+  };
+
+  // fetch
   useEffect(() => {
     const controller = new AbortController();
 
@@ -86,5 +112,5 @@ export const useDailyReports = () => {
     return () => controller.abort();
   }, []);
 
-  return { data, loading };
+  return { data, loading, updateReportAfterAssignment };
 };

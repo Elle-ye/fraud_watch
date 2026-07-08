@@ -12,13 +12,14 @@ import ReportsFilters from "../components/reports/ReportsFilters";
 import ReportsBulkBar from "../components/reports/ReportsBulkBar";
 import ReportsTable from "../components/reports/ReportsTable";
 import ReportsPagination from "../components/reports/ReportsPagination";
-import { useAllReports } from "../hooks/useAllReports";
+// import { useAllReports } from "../hooks/useAllReports";
 import { useReportsColumns } from "../hooks/useReportsColumns";
 import { filterReports } from "../utils/reportFormatters";
 import "./ReportsTable.css";
+import { useResolvedReports } from "../hooks/useResolvedReports";
 
-const DailyReports = () => {
-  const { data, loading, updateReportAfterAssignment } = useAllReports();
+const ResolvedReports = () => {
+  const { data, loading } = useResolvedReports();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -33,7 +34,8 @@ const DailyReports = () => {
 
   // Caching filters
   const filteredData = useMemo(
-    () => filterReports(data, { searchTerm, filterStatus, filterPriority }),
+    () =>
+      filterReports(data, { searchTerm, filterStatus, filterPriority }),
     [data, searchTerm, filterStatus, filterPriority],
   );
 
@@ -86,9 +88,9 @@ const DailyReports = () => {
   return (
     <div className="p-0 reports-page">
       <ReportsPageHeader
-        title="All Reports"
+        title="Resolved Reports"
         icon="fas fa-database"
-        subtitle={`Complete history of all fraud and crime reports`}
+        subtitle={`Complete history of all resolved fraud and crime reports`}
       />
 
       <ReportsFilters
@@ -119,32 +121,9 @@ const DailyReports = () => {
         show={detailReport != null}
         onHide={() => setDetailReport(null)}
         report={detailReport}
-        onAssignmentSuccess={(payload) => {
-          updateReportAfterAssignment(payload);
-          setDetailReport((prev) =>
-            prev?.id === payload.reportId
-              ? {
-                  ...prev,
-                  report_status: payload.status,
-                  report_assignments: [
-                    ...(prev.report_assignments || []),
-                    ...payload.assignments,
-                  ],
-                  assigned_to:
-                    payload.assignments
-                      .map((a) => a.assigned_to?.full_name)
-                      .filter(Boolean)
-                      .join(", ") || prev.assigned_to,
-                  assigned_by:
-                    payload.assignments[0]?.assigned_by?.full_name ||
-                    prev.assigned_by,
-                }
-              : prev,
-          );
-        }}
       />
     </div>
   );
 };
 
-export default DailyReports;
+export default ResolvedReports;

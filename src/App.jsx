@@ -18,6 +18,9 @@ import "./App.css";
 
 import { Toaster } from "react-hot-toast";
 import PublicRoute from "./Auth/PublicRoute";
+import ResolvedReports from "./pages/ResolvedReports";
+import PendingApproval from "./pages/PendingApproval";
+// import NewReport from './'
 
 function App() {
 
@@ -77,6 +80,8 @@ function App() {
         <Route path="/all-reports" element={<AllReports />} />
         {/* <Route path="/all-reports-comp" element={<AllReportsComp />} /> */}
         <Route path="/assigned-reports" element={<AssignedReports />} />
+        <Route path="/pending-approval" element={<PendingApproval />} />
+        <Route path="/resolved-reports" element={<ResolvedReports />} />
       </Route>
 
       {/* Catch all an redirect to New Report */}

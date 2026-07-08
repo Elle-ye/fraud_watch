@@ -32,28 +32,20 @@ export const useAssignedReports = () => {
                 assigned_at,
                 assigned_by:profiles!report_assignments_assigned_by_fkey(full_name),
                 reports (
-                    id,
-                    incident_type,
-                    incident_location,
-                    report_status,
-                    report_priority,
-                    created_at,
-                    attachments
+                    *
                 )
                 `,
           )
+        //   reports (
+        //     id,
+        //     incident_type,
+        //     incident_location,
+        //     report_status,
+        //     report_priority,
+        //     created_at,
+        //     attachments
+        // )
           .eq("assigned_to", profile.id)
-          //     .from("report_assignments")
-          //     .select(
-          //       `
-          //       report_id,
-          //       assigned_at,
-          //       assigned_to:profiles!report_assignments_assigned_to_fkey(full_name),
-          //       assigned_by:profiles!report_assignments_assigned_by_fkey(full_name),
-          //       reports (*)
-          //     `,
-          //     )
-
           .order("assigned_at", { ascending: false });
 
         if (error) throw error;

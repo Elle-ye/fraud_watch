@@ -1,5 +1,5 @@
 import { Modal, Button, Row, Col, Badge, Form } from "react-bootstrap";
-import { useState, useEffect } from "react";
+import { useState,  } from "react";
 import { supabase } from "../config/supabase";
 import { useAuth } from "../context/useAuth";
 
@@ -68,7 +68,7 @@ const priorityBadge = (priority) => {
   );
 };
 
-// Render
+// Renders Report Status and Report Priority badges
 const renderValue = (key, value) => {
   if (value === null || value === undefined || value === "") return "N/A";
 
@@ -82,17 +82,6 @@ const renderValue = (key, value) => {
       </span>
     );
   }
-
-  
-  // if (
-  //   (key === "assigned_to" || key === "assigned_by") &&
-  //   Array.isArray(value)
-  // ) {
-  //   return value
-  //     .map((profile) => profile.full_name)
-  //     .filter(Boolean)
-  //     .join(", ");
-  // }
 
   if (key === "attachments" && Array.isArray(value)) {
     if (value.length === 0) {
@@ -201,10 +190,9 @@ const renderValue = (key, value) => {
     }
   }
 
-  if (key === "created_at" || key === "updated_at")
-    return formatDateValue(value);
-  if (key === "incident_date") return formatDateOnly(value);
+  if (key === "created_at" || key === "updated_at") return formatDateValue(value);
 
+  if (key === "incident_date") return formatDateOnly(value);
 
   return String(value);
 };
@@ -222,39 +210,38 @@ const ORDERED_FIELDS = [
   // ["updated_at", "Last updated"],
 ];
 
-// Fields to hide from the report details modal
-const HIDDEN_FIELDS = new Set(["id", "report_assignments"]);
+const HIDDEN_FIELDS = new Set(["id"]);
 
 // Modal "container"
-const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
+const AssignedReportModal = ({ show, onHide, report }) => {
   // Assignment of report to team member
   const [assignment, setAssignment] = useState([]);
-  const [teamMembers, setTeamMembers] = useState("");
-  // const [status, setStatus] = useState("");
+  // const [teamMembers, setTeamMembers] = useState("");
+  const [status, setStatus] = useState("");
   // const [currentUser, setCurrentUser] = useState();
   // const [error, setError] = useState(null);
 
   const { profile, loading, user } = useAuth();
 
   // Report Assignment
-  useEffect(() => {
-    // Fetch team members
-    const fetchTeamMembers = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .eq("role", "team_member");
+  // useEffect(() => {
+  //   // Fetch team members
+  //   const fetchTeamMembers = async () => {
+  //     const { data, error } = await supabase
+  //       .from("profiles")
+  //       .select("id, full_name")
+  //       .eq("role", "team_member");
 
-      if (error) {
-        console.log("Error fetching Team Members", error);
-        setTeamMembers([]);
-      } else {
-        setTeamMembers(data);
-      }
-    };
+  //     if (error) {
+  //       console.log("Error fetching Team Members", error);
+  //       setTeamMembers([]);
+  //     } else {
+  //       setTeamMembers(data);
+  //     }
+  //   };
 
-    fetchTeamMembers();
-  }, []);
+  //   fetchTeamMembers();
+  // }, []);
 
   const handleClose = () => {
     setAssignment([]);
@@ -267,18 +254,113 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
   if (!report) return null;
 
   // Assign to team member
-  const handleSelect = (e) => {
-    const id = e.target.value;
-    if (!id || assignment.includes(id)) return;
-    setAssignment((prev) => [...prev, id]);
+  // const handleSelect = (e) => {
+  //   const id = e.target.value;
+  //   if (!id || assignment.includes(id)) return;
+  //   setAssignment((prev) => [...prev, id]);
+  // };
+
+  // // Remove team member
+  // const handleRemove = (id) => {
+  //   setAssignment((prev) => prev.filter((a) => a !== id));
+  // };
+
+  // Update Status
+  const handleStatusChange = (e) => {
+    const status = e.target.value;
+
+    if (!status) {
+      return;
+    } else {
+      setStatus(status);
+    }
   };
 
-  // Remove team member
-  const handleRemove = (id) => {
-    setAssignment((prev) => prev.filter((a) => a !== id));
+  // if (status === "pending" || status === "in_progress") {
+  //   // toast.success("Report resolved");
+  //   console.log("Report pending or in progress", status);
+  // } else if (status === "resolved" || status === "rejected") {
+  //   console.log("Report resolved or rejected", status);
+  // }
+
+  // Update Status Submit
+  const handleStatusSubmit = async () => {
+    if (!status) {
+      toast.error("Please select a status");
+      return;
+    }
+
+    if (status === "pending" || status === "in_progress") {
+      // toast.success("Report resolved");
+
+      try {
+        // const { error } = await supabase
+        //   .from("reports")
+        //   .update({ report_status: status })
+        //   .eq("id", report.id);
+
+        await toast.promise(
+          (async () => {
+            const { error } = await supabase
+              .from("reports")
+              .update({ report_status: status })
+              .eq("id", report.id);
+            if (error) throw error;
+          })(),
+          {
+            loading: "Updating Status...",
+            success: () => {
+              setStatus(status);
+              setTimeout(onHide, 1000);
+              alert("Status updated");
+              console.log("Status updated:", status);
+              return "Status updated";
+            },
+            error: (err) => err.message ?? "Failed to update status",
+          },
+        );
+      } catch (error) {
+        console.error("Error updating status", error);
+      } finally {
+        setStatus("");
+      }
+    } else if (status === "resolved" || status === "rejected") {
+      console.log("Report resolved or rejected,", status);
+    }
+
+    // try {
+    //   // const { error } = await supabase
+    //   //   .from("reports")
+    //   //   .update({ report_status: status })
+    //   //   .eq("id", report.id);
+
+    //   await toast.promise(
+    //     (async () => {
+    //       const { error } = await supabase
+    //         .from("reports")
+    //         .update({ report_status: status })
+    //         .eq("id", report.id);
+    //       if (error) throw error;
+    //     })(),
+    //     {
+    //       loading: "Updating Status...",
+    //       success: () => {
+    //         setStatus(status);
+    //         setTimeout(onHide, 1000);
+    //         alert("Status updated");
+    //         console.log("Status updated");
+    //         return "Status updated";
+    //       },
+    //       error: (err) => err.message ?? "Failed to update status",
+    //     },
+    //   );
+    // } catch (error) {
+    //   console.error("Error updating status", error);
+    // } finally {
+    //   setStatus("");
+    // }
   };
 
-  
   // Submit assignment
   const handleSubmit = async () => {
     if (!assignment.length) {
@@ -299,22 +381,10 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
     await toast.promise(
       // Wrap in a real promise that rejects on error
       (async () => {
-        const { data: insertedAssignments, error } = await supabase
+        const { error } = await supabase
           .from("report_assignments")
-          .insert(rows)
-          .select(`
-            assigned_to:profiles!report_assignments_assigned_to_fkey(full_name),
-            assigned_by:profiles!report_assignments_assigned_by_fkey(full_name)
-            `)
-
-            console.log("Inserted assignments:", insertedAssignments);
+          .insert(rows);
         if (error) throw error;
-
-        onAssignmentSuccess?.({
-          reportId: report.id,
-          assignments: insertedAssignments,
-          status: "pending"
-        })
       })(),
       {
         loading: "Updating assignment...",
@@ -392,15 +462,15 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
 
           {/* Report Assignment */}
 
-          {profile?.role === "supervisor" && (
+          {/* {profile?.role === "supervisor" && (
             <Col md={6} className="mt-5 mb-4">
               <Form.Group>
                 <Form.Label className="text-secondary mb-1">
                   <i className="fas fa-list-check me-2"></i>Assign To:
-                </Form.Label>
+                </Form.Label> */}
 
-                {/* Pills */}
-                {assignment.length > 0 && (
+          {/* Pills */}
+          {/* {assignment.length > 0 && (
                   <div className="assign-pills mb-2">
                     {assignment.map((id) => {
                       const member = teamMembers.find((m) => m.id === id);
@@ -418,10 +488,10 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
                       );
                     })}
                   </div>
-                )}
+                )} */}
 
-                {/* Dropdown */}
-                <Form.Select id="assign_to" onChange={handleSelect}>
+          {/* Dropdown */}
+          {/* <Form.Select id="assign_to" onChange={handleSelect}>
                   <option value="">Select Team Member</option>
                   {teamMembers
                     .filter((m) => !assignment.includes(m.id))
@@ -435,9 +505,9 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
                 </Form.Select>
               </Form.Group>
             </Col>
-          )}
+          )} */}
 
-          {/* {profile?.role === "team_member" && (
+          {profile?.role === "team_member" && (
             <Col md={6} className="mt-5 mb-4">
               <Form.Group>
                 <Form.Label className="text-secondary mb-1">
@@ -452,7 +522,7 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
                 </Form.Select>
               </Form.Group>
             </Col>
-          )} */}
+          )}
         </Row>
       </Modal.Body>
       <Modal.Footer>
@@ -461,7 +531,7 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
             Update Report
           </Button>
         )}
-        {/* {profile?.role === "team_member" && (
+        {profile?.role === "team_member" && (
           <Button
             variant="primary"
             className="me-2"
@@ -469,7 +539,7 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
           >
             Update Report
           </Button>
-        )} */}
+        )}
         <Button variant="secondary" onClick={handleClose}>
           Close
         </Button>
@@ -478,4 +548,4 @@ const ReportDetailsModal = ({ show, onHide, report, onAssignmentSuccess }) => {
   );
 };
 
-export default ReportDetailsModal;
+export default AssignedReportModal;

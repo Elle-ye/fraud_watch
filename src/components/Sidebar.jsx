@@ -198,6 +198,36 @@ const Sidebar = ({ isMobile, isCollapsed, onToggle, onClose }) => {
               </NavLink>
             </li>
             {/* )} */}
+
+            {/* Reports Pending Approval  */}
+            {profile?.role === "supervisor" && <li className="nav-item mb-2">
+              <NavLink
+                to="/pending-approval"
+                onClick={() => isMobile && onClose()}
+                className={({ isActive }) =>
+                  `nav-link d-flex align-items-center gap-3 app-sidebar-link ${isActive ? "active" : "text-white-50"}`
+                }
+              >
+                <i className="fas fa-list-alt"></i>
+                {!isCollapsed && <span>Pending Approval</span>}
+              </NavLink>
+            </li>}
+            
+
+            {/* Resolved Reports */}
+            <li className="nav-item mb-2">
+              <NavLink
+                to="/resolved-reports"
+                onClick={() => isMobile && onClose()}
+                className={({ isActive }) =>
+                  `nav-link d-flex align-items-center gap-3 app-sidebar-link ${isActive ? "active" : "text-white-50"}`
+                }
+              >
+                <i className="fas fa-list-alt"></i>
+                {!isCollapsed && <span>Resolved Reports</span>}
+              </NavLink>
+            </li>
+
             {/* General and team_member menu ends */}
             {profile?.role === "admin" && (
               <li className="nav-item mb-2">
